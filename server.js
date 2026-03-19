@@ -4,6 +4,8 @@ const dotenv = require('dotenv');
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Groq = require('groq-sdk');
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 dotenv.config();
 
@@ -212,6 +214,51 @@ app.get('/api/messages/:user1/:user2', async (req, res) => {
 });
 
 // START SERVER
+app.post('/api/chat', async (req, res) => {
+  const { message, system } = req.body;
+  if (!message) return res.status(400).json({ error: 'Message is required.' });
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: system || 'You are AgriLink AI assistant.',
+        messages: [{ role: 'user', content: message }]
+      })
+    });
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || 'Sorry, could not get a response.';
+    res.json({ reply });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+// ── AI CHAT ROUTE ──
+app.post('/api/chat', async (req, res) => {
+  const { message, system } = req.body;
+  if (!message) return res.status(400).json({ error: 'Message is required.' });
+  try {
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        { role: 'system', content: system || 'You are AgriLink AI assistant.' },
+        { role: 'user', content: message }
+      ],
+      max_tokens: 1000
+    });
+    const reply = completion.choices[0]?.message?.content || 'Sorry, could not get a response.';
+    res.json({ reply });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 app.listen(PORT, () => {
   console.log(`🌾 AgriLink backend running on port ${PORT}`);
 });
