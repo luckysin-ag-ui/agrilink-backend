@@ -1,13 +1,14 @@
+const dotenv = require('dotenv');
+dotenv.config(); // ← MUST be first!
+
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Groq = require('groq-sdk');
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-dotenv.config();
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,7 +27,6 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.json({ message: '🌾 AgriLink Backend is running!' });
 });
-
 // ── REGISTER ──
 app.post('/api/register', async (req, res) => {
   const { full_name, mobile, email, password, role, state } = req.body;
